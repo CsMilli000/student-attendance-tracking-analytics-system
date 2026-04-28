@@ -195,6 +195,7 @@ export default function StudentPage() {
     }
   }, []);
 
+  // Recalculate totals from Firestore so the dashboard reflects every session created.
   const refreshStats = useCallback(async (student: StudentAccount) => {
     try {
       await ensureAuth();
@@ -218,6 +219,7 @@ export default function StudentPage() {
         });
 
       const attendedSessionIds = new Set<string>();
+      // A set avoids double-counting if duplicate attendance documents ever exist.
       attendanceSnap.docs.forEach((docSnap) => {
         const data = docSnap.data() as AttendanceData;
         if (data?.sessionId) attendedSessionIds.add(data.sessionId);
@@ -258,6 +260,7 @@ export default function StudentPage() {
 
   useEffect(() => {
     if (!chartRef.current) return;
+    // Recreate the line chart when data, language, or mobile label sizing changes.
     if (timeline.length === 0) {
       if (chartInstanceRef.current) {
         chartInstanceRef.current.destroy();
@@ -346,6 +349,7 @@ export default function StudentPage() {
 
   useEffect(() => {
     if (!splitChartRef.current) return;
+    // The doughnut chart shows the latest attended/missed split for the signed-in student.
     if (totalSessions === 0) {
       if (splitChartInstanceRef.current) {
         splitChartInstanceRef.current.destroy();
@@ -454,6 +458,7 @@ export default function StudentPage() {
 
       const sessionDoc = snap.docs[0];
 
+      // Check for an existing row before writing so one student can only check in once.
       const dupQ = query(
         collection(db, "attendance"),
         where("sessionId", "==", sessionDoc.id),
@@ -465,6 +470,7 @@ export default function StudentPage() {
         return;
       }
 
+      // Attendance rows include display data so lecturer reports do not need extra joins.
       await addDoc(collection(db, "attendance"), {
         sessionId: sessionDoc.id,
         sessionCode: cleanCode,

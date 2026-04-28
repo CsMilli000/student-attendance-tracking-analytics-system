@@ -7,6 +7,7 @@ type ButtonSize = "sm" | "md";
 const join = (...parts: Array<string | false | null | undefined>) =>
   parts.filter(Boolean).join(" ");
 
+// Shared button styles keep action states consistent across lecturer and student pages.
 export function Button({
   variant = "primary",
   size = "md",
@@ -49,6 +50,7 @@ export function Button({
 
 type CardVariant = "glass" | "soft" | "solid";
 
+// Card variants provide reusable containers without repeating long Tailwind class lists.
 export function Card({
   variant = "soft",
   className,
@@ -68,6 +70,7 @@ export function Card({
   return <div className={join(variantClasses[variant], className)}>{children}</div>;
 }
 
+// TextInput pairs the label and input id so form fields stay accessible.
 export function TextInput({
   id,
   label,
@@ -105,6 +108,7 @@ export function TextInput({
 
 type NoticeTone = "info" | "success" | "warning" | "error";
 
+// Notice uses ARIA roles so success/error feedback is announced to assistive tech.
 export function Notice({
   tone = "info",
   children,

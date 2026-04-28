@@ -352,6 +352,7 @@ export default function LecturerPage() {
     }
   };
 
+  // Build week filters from the session chart data instead of storing duplicate state.
   const weekOptions = useMemo<WeekOption[]>(() => {
     const keys = new Set<string>();
     sessionSeries.forEach((point) => {
@@ -439,6 +440,7 @@ export default function LecturerPage() {
 
       const code = generateCode();
 
+      // Store only the session metadata; attendance rows are created separately by students.
       await addDoc(collection(db, "sessions"), {
         code,
         createdAt: Timestamp.now(),
@@ -478,6 +480,7 @@ export default function LecturerPage() {
         return;
       }
 
+      // Attendance is queried by code so lecturers can review a session without its Firestore id.
       const q = query(
         collection(db, "attendance"),
         where("sessionCode", "==", cleanCode)
@@ -540,6 +543,7 @@ export default function LecturerPage() {
         return;
       }
 
+      // Closing keeps historical records but prevents any more check-ins for the code.
       await updateDoc(doc(db, "sessions", snap.docs[0].id), {
         isActive: false,
       });
@@ -587,6 +591,7 @@ export default function LecturerPage() {
       }
 
       const currentSessionId = sessionSnap.docs[0].id;
+      // Reset removes attendance for this session only; the session remains open for reuse.
       const attendanceSnap = await getDocs(
         query(
           collection(db, "attendance"),
@@ -621,6 +626,7 @@ export default function LecturerPage() {
     try {
       setClearLoading(true);
       await ensureAuth();
+      // This demo clear action removes both session definitions and their check-in records.
       const sessionsSnap = await getDocs(collection(db, "sessions"));
       const attendanceSnap = await getDocs(collection(db, "attendance"));
       await Promise.all([
@@ -663,6 +669,7 @@ export default function LecturerPage() {
 
       const countMap = new Map<string, number>();
       const sessionCountMap = new Map<string, number>();
+      // Count once per attendance row for both student-level and session-level analytics.
       attendanceSnap.docs.forEach((docSnap) => {
         const data = docSnap.data() as AttendanceData;
         const key = data.studentUid;
@@ -690,6 +697,7 @@ export default function LecturerPage() {
         };
       });
 
+      // Convert raw session documents into chart-ready labels and attendance percentages.
       const sessionSeriesData = sessionsSnap.docs
         .map((docSnap, index) => {
           const data = docSnap.data() as SessionData;
@@ -752,6 +760,7 @@ export default function LecturerPage() {
 
   useEffect(() => {
     if (!chartRef.current) return;
+    // Chart.js owns the canvas, so destroy the old instance before drawing new data.
     const isSession = chartMode === "session";
     const source = isSession ? filteredSessionSeries : stats;
     if (source.length === 0) {
