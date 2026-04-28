@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function validSessionCode(code) {
+      return code is string
+        && code.size() >= 4
+        && code.size() <= 12
+        && code.matches('^[A-Z0-9]+$');
+    }
+
+    // NOTE:
+    // - This project currently uses client-side demo accounts, not server-verified roles.
+    // - Rules below harden structure and ownership checks while preserving current app behavior.
+
+    match /sessions/{sessionId} {
+      // Students need to read sessions for check-in and trend analytics.
+      allow read: if isSignedIn();
+
+      // Session creator must bind lecturerUid to current Firebase auth uid.
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly([
+          'code',
+          'createdAt',
+          'isActive',
+          'lecturerUid'
+        ])
+        && validSessionCode(request.resource.data.code)
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.isActive is bool
+        && request.resource.data.lecturerUid == request.auth.uid;
+
+      // Allow reset/close actions to change only the active flag.
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'isActive'
+        ])
+        && request.resource.data.isActive is bool;
+
+      // Keep delete enabled to preserve current "clear sessions data" feature.
+      allow delete: if isSignedIn();
+    }
+
+    match /attendance/{attendanceId} {
+      // Lecturer analysis currently reads all attendance rows.
+      allow read: if isSignedIn();
+
+      // Check-in rows are append-only and shape-validated.
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly([
+          'sessionId',
+          'sessionCode',
+          'studentUid',
+          'studentName',
+          'studentEmail',
+          'checkedInAt'
+        ])
+        && request.resource.data.sessionId is string
+        && request.resource.data.sessionCode is string
+        && validSessionCode(request.resource.data.sessionCode)
+        && request.resource.data.studentUid is string
+        && request.resource.data.studentName is string
+        && request.resource.data.studentEmail is string
+        && request.resource.data.checkedInAt is timestamp;
+
+      // Prevent tampering with existing check-in records.
+      allow update: if false;
+
+      // Keep delete enabled for current lecturer "clear data" flow.
+      allow delete: if isSignedIn();
+    }
+  }
+}

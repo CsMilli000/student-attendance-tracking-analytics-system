@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+:root {
+  --background: #e8f0ff;
+  --foreground: #13253b;
+  --font-sans: "Segoe UI", "Source Sans 3", sans-serif;
+  --font-display: "Trebuchet MS", "Sora", sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui;
+}
